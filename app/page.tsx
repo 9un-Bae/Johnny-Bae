@@ -53,7 +53,7 @@ export default function Portfolio() {
       subtitle: "Community-focused applied web development",
       stack: "HTML/CSS · JavaScript · Computer Science",
       desc: "Course project focused on applying technical and analytical thinking to a real healthcare-related problem space.",
-      image: "/hh.png",
+      image: "/hungerhelper.png",
       link: "https://github.com/9un-Bae/CS401-Project",
     },
     {
