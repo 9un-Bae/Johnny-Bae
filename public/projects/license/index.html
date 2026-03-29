@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>License Plate Detection System — Johnny Bae</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080a0d;
+  --bg2: #0e1117;
+  --bg3: #141820;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #d4d8e2;
+  --muted: #5a6070;
+  --accent: #00e5ff;
+  --accent2: #ff3d6b;
+  --green: #00ff88;
+  --amber: #ffb830;
+  --syne: 'Syne', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ── Grain overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.4;
+}
+
+/* ── Nav ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 0 48px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(8,10,13,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+.nav-links {
+  display: flex;
+  gap: 36px;
+  list-style: none;
+}
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--accent); }
+
+/* ── Hero ── */
+#hero {
+  min-height: auto;
+  display: flex;
+  align-items: center;
+  padding: 80px 48px 30px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated grid bg */
+#hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+  pointer-events: none;
+}
+
+.hero-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-tag {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hero-tag::before {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 1px;
+  background: var(--accent);
+}
+
+h1.hero-title {
+  font-family: var(--syne);
+  font-size: clamp(42px, 7vw, 88px);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  color: #fff;
+  margin-bottom: 32px;
+}
+h1.hero-title span {
+  color: var(--accent);
+  display: block;
+}
+
+.hero-desc {
+  font-size: 18px;
+  color: var(--muted);
+  max-width: 560px;
+  margin-bottom: 24px;
+  line-height: 1.8;
+  font-weight: 300;
+}
+
+.hero-ctas {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.btn {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  padding: 14px 28px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #000;
+  font-weight: 500;
+}
+.btn-primary:hover { background: #fff; }
+.btn-ghost {
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Hero stats */
+.hero-stats {
+  display: flex;
+  gap: 60px;
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.hero-stat-val {
+  font-family: var(--syne);
+  font-size: 36px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.hero-stat-val span { color: var(--accent); }
+.hero-stat-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ── Section base ── */
+section {
+  padding: 48px 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.section-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-tag::before {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 1px;
+  background: var(--accent);
+}
+h2.section-title {
+  font-family: var(--syne);
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 20px;
+}
+.section-sub {
+  font-size: 16px;
+  color: var(--muted);
+  max-width: 600px;
+  margin-bottom: 24px;
+  font-weight: 300;
+}
+
+/* ── Overview cards ── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.overview-card {
+  background: var(--bg2);
+  padding: 36px 32px;
+  transition: background 0.2s;
+}
+.overview-card:hover { background: var(--bg3); }
+.ov-icon {
+  font-size: 28px;
+  margin-bottom: 20px;
+  display: block;
+}
+.ov-title {
+  font-family: var(--syne);
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 10px;
+}
+.ov-desc {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* ── Pipeline ── */
+#pipeline { background: var(--bg2); max-width: 100%; padding: 120px 0; }
+#pipeline > .pipeline-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+.pipeline-steps {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  position: relative;
+  margin-top: 64px;
+}
+.pipeline-steps::before {
+  content: '';
+  position: absolute;
+  top: 36px;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent), transparent);
+  opacity: 0.3;
+}
+.pipe-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 12px;
+  position: relative;
+}
+.pipe-num {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s;
+}
+.pipe-step:hover .pipe-num {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+  box-shadow: 0 0 24px rgba(0,229,255,0.3);
+}
+.pipe-label {
+  font-family: var(--syne);
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.pipe-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── Demo section ── */
+.demo-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: start;
+}
+.demo-video-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  aspect-ratio: 16/10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.demo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: var(--muted);
+}
+.demo-placeholder-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+.demo-placeholder p {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.demo-video-wrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.demo-features {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.demo-feature {
+  display: flex;
+  gap: 16px;
+  padding: 24px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color 0.2s;
+}
+.demo-feature:hover { border-color: var(--accent); }
+.demo-feature-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.demo-feature-title {
+  font-family: var(--syne);
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.demo-feature-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── Metrics ── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 48px;
+}
+.metric-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px 24px;
+  text-align: center;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.metric-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.metric-val {
+  font-family: var(--syne);
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.metric-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.training-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.training-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px;
+}
+.training-card-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.training-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.training-row:last-child { border-bottom: none; }
+.training-row-key { color: var(--muted); font-family: var(--mono); }
+.training-row-val { color: #fff; font-weight: 500; }
+.training-row-val.accent { color: var(--accent); }
+
+/* ── Tech stack ── */
+.stack-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.stack-pill {
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 8px 18px;
+  border-radius: 100px;
+  border: 1px solid var(--border2);
+  color: var(--text);
+  background: var(--bg2);
+  transition: all 0.2s;
+}
+.stack-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,229,255,0.05);
+}
+
+/* ── Report preview ── */
+.report-preview {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg2);
+}
+.report-preview-bar {
+  background: var(--bg3);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot-red { background: #ff5f57; }
+.dot-yellow { background: #ffbd2e; }
+.dot-green { background: #28c840; }
+.report-preview-url {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 8px;
+}
+.report-preview-body {
+  padding: 28px;
+}
+.rp-alert {
+  background: rgba(255,59,59,0.08);
+  border: 1px solid rgba(255,59,59,0.3);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #ff5f5f;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.rp-dot {
+  width: 7px; height: 7px;
+  background: #ff3b3b;
+  border-radius: 50%;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.4;transform:scale(1.4)}
+}
+.rp-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.rp-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+}
+.rp-card.red { border-color: rgba(255,59,59,0.3); background: rgba(255,59,59,0.05); }
+.rp-card.green { border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.05); }
+.rp-card-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.rp-card-val {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1;
+}
+.rp-card.red .rp-card-val { color: #ff5f5f; }
+.rp-card.green .rp-card-val { color: #00ff88; }
+.rp-table-header {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 2fr;
+  gap: 8px;
+}
+.rp-table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 2fr;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-family: var(--mono);
+  align-items: center;
+}
+.rp-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 600;
+  display: inline-block;
+}
+.rp-badge.r { background: rgba(255,59,59,0.15); color: #ff5f5f; border: 1px solid rgba(255,59,59,0.3); }
+.rp-badge.g { background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid rgba(0,255,136,0.2); }
+
+/* ── GitHub CTA ── */
+#github {
+  padding: 120px 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+  text-align: center;
+}
+.github-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 80px 48px;
+  position: relative;
+  overflow: hidden;
+}
+.github-card::before {
+  content: '';
+  position: absolute;
+  top: -100px; left: 50%;
+  transform: translateX(-50%);
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(0,229,255,0.06), transparent 70%);
+  pointer-events: none;
+}
+.github-title {
+  font-family: var(--syne);
+  font-size: 40px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+}
+.github-sub {
+  color: var(--muted);
+  margin-bottom: 40px;
+  font-size: 16px;
+  font-weight: 300;
+}
+
+/* ── Footer ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.footer-left {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.footer-left span { color: var(--accent); }
+.footer-right {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── Scroll reveal ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  nav { padding: 0 24px; }
+  .nav-links { display: none; }
+  section, #hero, #github { padding: 80px 24px; }
+  #pipeline > .pipeline-inner { padding: 0 24px; }
+  .overview-grid { grid-template-columns: 1fr; }
+  .pipeline-steps { grid-template-columns: 1fr; gap: 24px; }
+  .pipeline-steps::before { display: none; }
+  .demo-layout { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .training-details { grid-template-columns: 1fr; }
+  .rp-cards { grid-template-columns: repeat(2, 1fr); }
+  footer { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a class="nav-logo" href="#">LPR_SYS</a>
+  <ul class="nav-links">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#pipeline">Pipeline</a></li>
+    <li><a href="#demo">Demo</a></li>
+    <li><a href="#metrics">Results</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<div id="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">Nā Liko Naʻauao Project — Chaminade University</div>
+    <h1 class="hero-title">
+      YOLO-BOLO
+      <span style="display:block; font-size: 36px; color: #00e5ff;">
+        License Plate Detection System
+      </span>
+    </h1>
+    <p class="hero-desc">
+      A real-time capable computer vision pipeline that detects license plates in video footage, reads the serial number using OCR, and cross-references against a watchlist and blacklist. Generates a full incident report after each run.
+    </p>
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-val"><span>93</span>%</div>
+        <div class="hero-stat-label">mAP50 Detection</div>
+      </div>
+      <div>
+        <div class="hero-stat-val">27<span>k</span></div>
+        <div class="hero-stat-label">Training Images</div>
+      </div>
+      <div>
+        <div class="hero-stat-val">12<span>×</span></div>
+        <div class="hero-stat-label">OCR Variants</div>
+      </div>
+      <div>
+        <div class="hero-stat-val"><span>~</span>RT</div>
+        <div class="hero-stat-label">Video Inference</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overview -->
+<section id="overview">
+  <div class="section-tag">What it does</div>
+  <h2 class="section-title">End-to-end plate intelligence</h2>
+  <p class="section-sub">From raw camera footage to a timestamped incident report — fully automated.</p>
+  <div class="overview-grid reveal">
+    <div class="overview-card">
+      <span class="ov-icon">🎯</span>
+      <div class="ov-title">Plate Detection</div>
+      <div class="ov-desc">YOLOv11 nano model trained on 27,000+ US and international plate images localizes plates in every frame with 0.93 mAP50 accuracy.</div>
+    </div>
+    <div class="overview-card">
+      <span class="ov-icon">🔤</span>
+      <div class="ov-title">Serial OCR</div>
+      <div class="ov-desc">12 preprocessing variants (CLAHE, threshold, sharpening) feed EasyOCR. A majority vote + length scoring system selects the best read.</div>
+    </div>
+    <div class="overview-card">
+      <span class="ov-icon">🔍</span>
+      <div class="ov-title">Zone Isolation</div>
+      <div class="ov-desc">The central 55% band of each plate crop is extracted before OCR, removing state names, slogans, and registration stickers from the read.</div>
+    </div>
+    <div class="overview-card">
+      <span class="ov-icon">⚠️</span>
+      <div class="ov-title">Watchlist & Blacklist</div>
+      <div class="ov-desc">Every detected plate is checked against configurable CSV lists with vehicle info. Fuzzy matching handles minor OCR misreads automatically.</div>
+    </div>
+    <div class="overview-card">
+      <span class="ov-icon">📋</span>
+      <div class="ov-title">Incident Logging</div>
+      <div class="ov-desc">Three timestamped CSVs are generated per run — all plates, watchlist matches, and blacklist alerts — with frame numbers and confidence scores.</div>
+    </div>
+    <div class="overview-card">
+      <span class="ov-icon">📊</span>
+      <div class="ov-title">HTML Report</div>
+      <div class="ov-desc">A self-contained HTML report auto-generates after each inference run with stat cards, color-coded tables, and a pulsing alert banner for blacklist hits.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Pipeline -->
+<div id="pipeline">
+  <div class="pipeline-inner">
+    <div class="section-tag">How it works</div>
+    <h2 class="section-title">The pipeline</h2>
+    <p class="section-sub">Five stages from raw frame to logged result.</p>
+    <div class="pipeline-steps reveal">
+      <div class="pipe-step">
+        <div class="pipe-num">01</div>
+        <div class="pipe-label">Detection</div>
+        <div class="pipe-desc">YOLOv11 runs on every frame and returns bounding boxes for each plate</div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">02</div>
+        <div class="pipe-label">Crop & Zone</div>
+        <div class="pipe-desc">Plate is cropped with padding, then trimmed to the serial number band only</div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">03</div>
+        <div class="pipe-label">OCR</div>
+        <div class="pipe-desc">12 preprocessing variants run through EasyOCR with an allowlist of A–Z 0–9</div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">04</div>
+        <div class="pipe-label">Scoring</div>
+        <div class="pipe-desc">Majority vote + confidence + length score selects the best candidate</div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">05</div>
+        <div class="pipe-label">Match & Log</div>
+        <div class="pipe-desc">Result is checked against lists, logged to CSV, and written to the report</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Demo -->
+<section id="demo">
+  <div class="section-tag">In action</div>
+  <h2 class="section-title">Demo & output</h2>
+  <div class="demo-layout reveal">
+    <div style="
+      height: 100%;
+      max-height: 480px;
+      display: flex;
+      align-items: center;
+      user-select: none;
+    ">
+      <video
+        autoplay
+        muted
+        loop
+        playsinline
+        controlsList="nodownload"
+        oncontextmenu="return false;"
+        style="
+          width: 100%;
+          height: 100%;
+          max-height: 480px;
+          object-fit: cover;
+          object-position: center 60%;
+          border-radius: 12px;
+        "
+      >
+        <source src="/projects/license/video.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div class="demo-features">
+      <div class="demo-feature">
+        <div class="demo-feature-icon">🟢</div>
+        <div>
+          <div class="demo-feature-title">Green box — Watchlist</div>
+          <div class="demo-feature-desc">Known vehicles on the watchlist are highlighted green with make, model, and year shown inline on the frame.</div>
+        </div>
+      </div>
+      <div class="demo-feature">
+        <div class="demo-feature-icon">🔴</div>
+        <div>
+          <div class="demo-feature-title">Red box — Blacklist alert</div>
+          <div class="demo-feature-desc">Blacklisted plates trigger a red bounding box and are immediately logged with the alert reason from the CSV.</div>
+        </div>
+      </div>
+      <div class="demo-feature">
+        <div class="demo-feature-icon">🟡</div>
+        <div>
+          <div class="demo-feature-title">Yellow zone box — OCR region</div>
+          <div class="demo-feature-desc">A secondary box shows exactly which band of the plate is being read by OCR — useful for debugging and demonstration.</div>
+        </div>
+      </div>
+      <div class="demo-feature">
+        <div class="demo-feature-icon">🟠</div>
+        <div>
+          <div class="demo-feature-title">Orange box — Unknown</div>
+          <div class="demo-feature-desc">Plates not matched to any list are logged as unknown and included in the all-plates table of the report.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report preview -->
+  <div style="margin-top: 64px;">
+    <div class="section-tag">Output report</div>
+    <h2 class="section-title" style="font-size: 28px; margin-bottom: 32px;">Auto-generated HTML report</h2>
+    <div class="report-preview reveal">
+      <div class="report-preview-bar">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <div class="report-preview-url">report_20260327_175800.html</div>
+      </div>
+      <div class="report-preview-body">
+        <div class="rp-alert">
+          <div class="rp-dot"></div>
+          2 BLACKLISTED VEHICLES DETECTED — Review blacklist log immediately
+        </div>
+        <div class="rp-cards">
+          <div class="rp-card">
+            <div class="rp-card-label">Total Plates</div>
+            <div class="rp-card-val">35</div>
+          </div>
+          <div class="rp-card red">
+            <div class="rp-card-label">Blacklist Hits</div>
+            <div class="rp-card-val">2</div>
+          </div>
+          <div class="rp-card green">
+            <div class="rp-card-label">Watchlist Hits</div>
+            <div class="rp-card-val">2</div>
+          </div>
+          <div class="rp-card">
+            <div class="rp-card-label">Unknown</div>
+            <div class="rp-card-val" style="color:var(--muted)">31</div>
+          </div>
+        </div>
+        <div class="rp-table-header">
+          <span>Plate</span><span>Make</span><span>Model</span><span>Year</span><span>Reason</span>
+        </div>
+        <div class="rp-table-row">
+          <span><span class="rp-badge r">ABC123</span></span>
+          <span style="color:var(--muted)">Honda</span>
+          <span style="color:var(--muted)">Civic</span>
+          <span style="color:var(--muted)">2012</span>
+          <span style="color:var(--muted)">Reported Stolen</span>
+        </div>
+        <div class="rp-table-row">
+          <span><span class="rp-badge g">XYZ789</span></span>
+          <span style="color:var(--muted)">Mazda</span>
+          <span style="color:var(--muted)">CX5</span>
+          <span style="color:var(--muted)">2022</span>
+          <span style="color:var(--muted)">Mom is Home</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Metrics -->
+<section id="metrics" style="background: var(--bg2); max-width: 100%; padding: 120px 0;">
+  <div style="max-width: 1100px; margin: 0 auto; padding: 0 48px;">
+    <div class="section-tag">Model performance</div>
+    <h2 class="section-title">Training results</h2>
+    <p class="section-sub">YOLOv11 nano trained for 30 epochs on Apple M2 Pro with MPS acceleration.</p>
+
+    <div class="metrics-grid reveal">
+      <div class="metric-card">
+        <div class="metric-val">0.93</div>
+        <div class="metric-label">mAP50</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">0.85</div>
+        <div class="metric-label">mAP50-95</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">0.91</div>
+        <div class="metric-label">Precision</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">0.89</div>
+        <div class="metric-label">Recall</div>
+      </div>
+    </div>
+
+    <div class="training-details reveal">
+      <div class="training-card">
+        <div class="training-card-title">Dataset</div>
+        <div class="training-row"><span class="training-row-key">Train</span><span class="training-row-val">21,955 images</span></div>
+        <div class="training-row"><span class="training-row-key">Validation</span><span class="training-row-val">3,378 images</span></div>
+        <div class="training-row"><span class="training-row-key">Test</span><span class="training-row-val">1,950 images</span></div>
+        <div class="training-row"><span class="training-row-key">Source</span><span class="training-row-val">Roboflow Universe</span></div>
+        <div class="training-row"><span class="training-row-key">Plates</span><span class="training-row-val">US + International</span></div>
+      </div>
+      <div class="training-card">
+        <div class="training-card-title">Training config</div>
+        <div class="training-row"><span class="training-row-key">Model</span><span class="training-row-val accent">YOLOv11 nano</span></div>
+        <div class="training-row"><span class="training-row-key">Epochs</span><span class="training-row-val">30</span></div>
+        <div class="training-row"><span class="training-row-key">Image size</span><span class="training-row-val">480px</span></div>
+        <div class="training-row"><span class="training-row-key">Batch size</span><span class="training-row-val">4</span></div>
+        <div class="training-row"><span class="training-row-key">Hardware</span><span class="training-row-val">Apple M2 Pro (MPS)</span></div>
+      </div>
+    </div>
+
+    <div style="margin-top: 48px;">
+      <div class="training-card-title" style="margin-bottom: 20px; font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase;">Tech stack</div>
+      <div class="stack-grid reveal">
+        <span class="stack-pill">YOLOv11</span>
+        <span class="stack-pill">EasyOCR</span>
+        <span class="stack-pill">OpenCV</span>
+        <span class="stack-pill">Python 3.11</span>
+        <span class="stack-pill">NumPy</span>
+        <span class="stack-pill">PyTorch (MPS)</span>
+        <span class="stack-pill">Roboflow</span>
+        <span class="stack-pill">HTML / CSS / JS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="margin-top: 40px; text-align: center;">
+  <a
+    href="https://github.com/9un-Bae/CS495-license-detector"
+    target="_blank"
+    style="
+      display: inline-block;
+      padding: 12px 20px;
+      border-radius: 10px;
+      background: #111;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 500;
+      border: 1px solid #333;
+      transition: all 0.2s ease;
+    "
+    onmouseover="this.style.background='#222'"
+    onmouseout="this.style.background='#111'"
+  >
+    View GitHub Repository
+  </a>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-left">Built by <span>Johnny Bae</span> - Chaminade University of Honolulu</div>
+  <div class="footer-right">Nā Liko Naʻauao, CS495, Spring 2026</div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
