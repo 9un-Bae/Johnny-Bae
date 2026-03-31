@@ -331,18 +331,20 @@ export default function Portfolio() {
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
           <button onClick={() => setCurrentPage("home")} className="text-left">
             <p className="text-sm uppercase tracking-[0.25em] text-neutral-400">Johnny Bae</p>
           </button>
 
-          <nav className="hidden gap-6 md:flex">
+          <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm md:gap-x-6">
             {nav.map((item) => (
               <button
                 key={item.key}
                 onClick={() => setCurrentPage(item.key)}
-                className={`text-sm transition ${
-                  currentPage === item.key ? "text-white" : "text-neutral-300 hover:text-white"
+                className={`transition ${
+                  currentPage === item.key
+                    ? "text-white"
+                    : "text-neutral-300 hover:text-white"
                 }`}
               >
                 {item.label}
